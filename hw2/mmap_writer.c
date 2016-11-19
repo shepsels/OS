@@ -7,41 +7,44 @@
 # include <string.h>
 # include <errno.h> 
 # include <sys/time.h>
+# include <stdlib.h>
+# include <sys/mman.h>
+# include <signal.h>
 
 # define MAX_LEN 1024
 # define FILESIZE 4000	//todo check what should be here
 # define ERROR -1
-# define TEMPDIR "/tmp"
+# define TEMPDIR "tmp"
 # define MMAP_FILE "mmapped.bin"
 
 
 int main(int argc, char** argv)
 {
 	//nums
-	int NUM, RPID;
+	int NUM, RPID, mmappedFile;
 	double elapsed_microsec;
 	// chars
 	char mmapedFullname[MAX_LEN];
 	char* mapArray;
-	// files
-	FILE *mmappedFile;
 	// time measurement
 	struct timeval t1, t2;
 
 	// validate number of arguments
-	if(argc != 2) {
+	if(argc != 3) {
 		printf("wrong number of arguments.%s\n", strerror(errno));
 		return ERROR;
 	}
 
 	// read arguments
-	NUM = argv[0];
-	RPID = argv[1];
+	NUM  = atoi(argv[1]);
+	RPID = atoi(argv[2]);
+//tododelete	// printf("arguments are %d %d\n", NUM, RPID);
 
 	// create path to mmapped file //todo maybe can pass this and create it in def section
 	sprintf(mmapedFullname, "%s/%s", TEMPDIR, MMAP_FILE);
 
 	// create mmapped file
+	//todo needs to check what to do if dir doesnt exist. maybe needs to mkdir first
 	if((mmappedFile = open(mmapedFullname, O_RDWR | O_CREAT, 0600)) < 0) {
 		printf("cannot create mmap file.%s\n", strerror(errno));
 		return ERROR;
@@ -49,18 +52,19 @@ int main(int argc, char** argv)
 	// todo validate if should do
 	// credit: example in moodle
 	// Force the file to be of the same size as the (mmapped) array
-	if (lseek(mmappedFile, FILESIZE-1, SEEK_SET) == -1) {
+	if (lseek(mmappedFile, FILESIZE-1, SEEK_SET) < 0) {
 		printf("Error calling lseek() to 'stretch' the file: %s\n", strerror(errno));
-		return Error;
+		return ERROR;
 	}
+	printf("filesize: %d, seek: %d\n", FILESIZE, SEEK_CUR); //todo delete
+
 
 	// Something has to be written at the end of the file,
 	// so the file actually has the new size. 
-	result = ;
 	if (write(mmappedFile, "", 1) != 1)
 	{
 		printf("Error writing last byte of the file: %s\n", strerror(errno));
-		return Error;
+		return ERROR;
 	}
 
 	// mapping file
@@ -74,32 +78,28 @@ int main(int argc, char** argv)
 	if (MAP_FAILED == mapArray)
 	{
 	printf("Error mmapping the file: %s\n", strerror(errno));
-	return Error;
+	return ERROR;
 	}
 
 	// start time measurement
 	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
 		printf("Cannot start measuring time: %s\n", strerror(errno));
-		return Error;
+		return ERROR;
 	}
 
-	//-----------------------------------------------------
 	// fill array with sequential 'a'
-	for(int i=0, i<NUM-1, i++) {
+	for (int i=0; i<(NUM-1); i++) {
 		mapArray[i] = 'a';
 	}
 	mapArray[NUM-1] = '\0';
 
 	// send signal to end process
 	if(kill(RPID, SIGUSR1) != 0) {
-		printf("Cannot terminate reader process: %s. %s\n", RPID, strerror(errno));
+		printf("Cannot terminate reader process: %d. %s\n", RPID, strerror(errno));
 	}
 
-
-	//-----------------------------------------------------
-
 	// Finish time measuring
-	gettimeofday(&t2, NULL);
+	gettimeofday(&t2, NULL); //todo validate
 	
 	// Counting time elapsed
 	elapsed_microsec = (t2.tv_sec - t1.tv_sec) * 1000.0;
@@ -108,5 +108,5 @@ int main(int argc, char** argv)
 	// print result together with number of bytes written
 	printf("%f microseconds passed\n", elapsed_microsec); //todo edit to fit demands
 
-	//close files and free memory todo
+	// //close files and free memory todo
 }

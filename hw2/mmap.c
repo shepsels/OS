@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <string.h>
 
-#define FILEPATH "/tmp/mmapped.bin"
+#define FILEPATH "tmp/mmapped.bin"
 #define FILESIZE 4000
 
 int main(int argc, char *argv[])
@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
     printf("Error calling lseek() to 'stretch' the file: %s\n", strerror(errno));
     return -1;
   }
+  printf("seek: %d\n", &SEEK_CUR);
 
   // Something has to be written at the end of the file,
   // so the file actually has the new size. 
