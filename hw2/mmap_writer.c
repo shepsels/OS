@@ -16,6 +16,7 @@
 # define ERROR -1
 # define TEMPDIR "tmp"
 # define MMAP_FILE "mmapped.bin"
+# define PERM 0600
 
 
 int main(int argc, char** argv)
@@ -45,7 +46,7 @@ int main(int argc, char** argv)
 
 	// create mmapped file
 	//todo needs to check what to do if dir doesnt exist. maybe needs to mkdir first
-	if((mmappedFile = open(mmapedFullname, O_RDWR | O_CREAT, 0600)) < 0) {
+	if((mmappedFile = open(mmapedFullname, O_RDWR | O_CREAT, PERM)) < 0) {
 		printf("cannot create mmap file.%s\n", strerror(errno));
 		return ERROR;
 	}
@@ -99,7 +100,10 @@ int main(int argc, char** argv)
 	}
 
 	// Finish time measuring
-	gettimeofday(&t2, NULL); //todo validate
+	if(gettimeofday(&t2, NULL) < 0) {
+		printf("Cannot stop time measuring: %s\n", strerror(errno));
+		return ERROR;
+	}
 	
 	// Counting time elapsed
 	elapsed_microsec = (t2.tv_sec - t1.tv_sec) * 1000.0;
