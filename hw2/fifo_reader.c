@@ -20,7 +20,7 @@
 
 int main(int argc, char** argv)
 {
-	int fifoFile, bytesRead, fileSize, totalRead=0, i, tmp=0;
+	int fifoFile, bytesRead, fileSize, totalRead=0, i;
 	double elapsed_microsec;
 	char buffer[BUFFERSIZE];
 	struct stat st;
@@ -31,17 +31,18 @@ int main(int argc, char** argv)
 	sleep(2);
 
 	// open fifo file for reading
-	if((fifoFile = open(FIFOPATH, O_RDONLY, PERM)) < 0) {
+	if((fifoFile = open(FIFOPATH, O_RDONLY)) < 0) {
 		printf("cannot open fifo file.%s\n", strerror(errno));
 		return ERROR;
 	}
 
-	// get file size
-	if(stat(FIFOPATH, &st) < 0) {
-		printf("Cannot get %s size: %s\n", FIFOPATH, strerror(errno));
-		exit(errno);
-	}
-	fileSize = st.st_size;
+	// // get file size
+	// if(stat(FIFOPATH, &st) < 0) {
+	// 	printf("Cannot get %s size: %s\n", FIFOPATH, strerror(errno));
+	// 	exit(errno);
+	// }
+	// fileSize = st.st_size;
+	// printf("filesize: %d\n", fileSize);
 
 	// start time measurement
 	if(gettimeofday(&t1, NULL) < 0) {
@@ -49,13 +50,10 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
-	printf("waiting...\n");
-	sleep(25);
-	printf("continue\n");
-
 	// read bytes 
 	while(bytesRead = read(fifoFile, buffer, BUFFERSIZE) > 0) {
 		// count total number of 'a' characters
+		printf("reading %d bytes to buffer.\n", bytesRead);
 		for(i=0; i<bytesRead; i++) {
 			if(buffer[i] == 'a') {
 				totalRead++;
@@ -79,13 +77,12 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 	
 	// print result together with number of bytes written
-	printf("tmp: %d\n", tmp);
 	printf("%d were read in %f microseconds through fifo\n", totalRead, elapsed_microsec); //todo edit to fit demands
 
 	// close file
 	close(fifoFile);
 
 	// exit
-	exit(EXIT_SUCCESS);
+	exit(0);
 
 }

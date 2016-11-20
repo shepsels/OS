@@ -20,7 +20,7 @@
 
 int main(int argc, char** argv)
 {
-	int NUM, fifoFile, writtenBytes, i;
+	int NUM, fifoFile, writtenBytes, i, tmp=0;
 	double elapsed_microsec;
 	// time measurement
 	struct timeval t1, t2;
@@ -42,11 +42,13 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
+
 	// open file for writing
 	if((fifoFile = open(FIFOPATH, O_WRONLY, PERM)) < 0) {
 		printf("Cannot open fifo file.%s\n", strerror(errno));
 		return ERROR;
 	}
+
 
 	// start time measurement
 	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
@@ -61,10 +63,12 @@ int main(int argc, char** argv)
 
 	// write to file the whole BUFFER_SIZE amount as long as NUM >= BUFFER_SIZE
 	while (NUM >= BUFFER_SIZE) {
-		if (write(fifoFile, buffer, BUFFER_SIZE) < 0) {
+		printf("num is: %d and buffer is: %d\n", NUM, BUFFER_SIZE);
+		if (tmp = write(fifoFile, buffer, BUFFER_SIZE) < 0) {
 			printf("Cannot write to file: %s\n", strerror(errno));
 			return ERROR;
 		}
+		printf("written %d bytes\n", tmp);
 		writtenBytes+=BUFFER_SIZE;
 		NUM -= BUFFER_SIZE;
 	}
