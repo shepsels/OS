@@ -103,10 +103,11 @@ void sigint_handler(int signum) {//todo check if it counts as ignore
 int main(int argc, char** argv)
 {
 	// Structure to pass to the registration syscall //credit moodle example
-	struct sigaction sigusr1, oldSignal;
+	struct sigaction sigusr1, oldSignal, sigign;
 	// struct sigaction sigint;
 	// Assign pointer to our handler function
 	sigusr1.sa_handler = sigusr1_handler;
+	sigign.sa_handler = SIG_IGN;
 	// sigint.sa_handler = sigint_handler;
 	// Remove any special flag
 	sigusr1.sa_flags = 0;
@@ -115,6 +116,11 @@ int main(int argc, char** argv)
 	if (0 != sigaction (SIGUSR1, &sigusr1, NULL))
 	{
 		printf("Signal handle registration failed. %s\n",strerror(errno));
+		return ERROR;
+	}
+	// ignore sigterm
+	if (0 != sigaction (SIGTERM, &sigign, &oldSignal)) {
+		printf("Signal ignoring failed. %s\n",strerror(errno));
 		return ERROR;
 	}
 	// if (0 != sigaction (SIGUSR1, &sigint, NULL))
@@ -128,6 +134,13 @@ int main(int argc, char** argv)
 	{
 		sleep(2);
 	}
+
+	// set back sigterm
+	if (0 != sigaction (SIGTERM, &oldSignal, NULL)) {
+		printf("Signal restoring failed. %s\n",strerror(errno));
+		return ERROR;
+	}
+
 	
 	return 0;
 }
