@@ -12,7 +12,7 @@
 # include <signal.h>
 
 # define MAX_LEN 1024
-# define FILESIZE 4000	//todo check what should be here
+# define FILESIZE 40960000	//todo check what should be here
 # define ERROR -1
 # define TEMPDIR "tmp"
 # define MMAP_FILE "mmapped.bin"
@@ -22,7 +22,7 @@
 int main(int argc, char** argv)
 {
 	//nums
-	int NUM, RPID, mmappedFile;
+	int NUM, RPID, mmappedFile, i;
 	double elapsed_microsec;
 	// chars
 	char mmapedFullname[MAX_LEN];
@@ -53,12 +53,10 @@ int main(int argc, char** argv)
 	// todo validate if should do
 	// credit: example in moodle
 	// Force the file to be of the same size as the (mmapped) array
-	if (lseek(mmappedFile, FILESIZE-1, SEEK_SET) < 0) {
+	if (lseek(mmappedFile, NUM-1, SEEK_SET) < 0) {// not file size, number of bytes
 		printf("Error calling lseek() to 'stretch' the file: %s\n", strerror(errno));
 		return ERROR;
 	}
-	printf("filesize: %d, seek: %d\n", FILESIZE, SEEK_CUR); //todo delete
-
 
 	// Something has to be written at the end of the file,
 	// so the file actually has the new size. 
@@ -70,7 +68,7 @@ int main(int argc, char** argv)
 
 	// mapping file
 	mapArray = (char*) mmap(NULL,
-	                 FILESIZE,
+	                 NUM,
 	                 PROT_READ | PROT_WRITE, 
 	                 MAP_SHARED,
 	                 mmappedFile,
@@ -89,7 +87,7 @@ int main(int argc, char** argv)
 	}
 
 	// fill array with sequential 'a'
-	for (int i=0; i<(NUM-1); i++) {
+	for (i=0; i<(NUM-1); i++) {
 		mapArray[i] = 'a';
 	}
 	mapArray[NUM-1] = '\0';
@@ -110,7 +108,10 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 	
 	// print result together with number of bytes written
-	printf("%f microseconds passed\n", elapsed_microsec); //todo edit to fit demands
+	printf("%d were written in %f microseconds through mmap\n", (i+1), elapsed_microsec); //todo edit to fit demands
 
 	// //close files and free memory todo
+	close(mmappedFile);
+	return 0;
+
 }
