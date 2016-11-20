@@ -15,15 +15,16 @@
 # define ERROR -1
 # define PERM 0600
 # define FIFOPATH "tmp/osfifo"
+# define BUFFER_SIZE 4096
 
 
 int main(int argc, char** argv)
 {
-	int NUM, fifoFile, writtenBytes;
+	int NUM, fifoFile, writtenBytes, i;
 	double elapsed_microsec;
 	// time measurement
 	struct timeval t1, t2;
-	char *arr;
+	char buffer[BUFFER_SIZE];
 
 
 	// validate number of arguments
@@ -53,22 +54,30 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
-// make sure if need to strech file like mmap]	
-	
-	// create array in the correct size //todo make sure can use malloc and not buffer
-	printf("malloc");
-	arr = (char*) malloc(NUM);
-	for (int i=0; i<NUM; i++) {
-		arr[i] = 'a';
+	// fill buffer with 'a' NUM times if NUM > buffer size
+	for (i=0; i<BUFFER_SIZE; i++) {
+		buffer[i] = 'a';
 	}
-	printf("malloced");
 
-	// write sequential 'a' NUM times
-	if(writtenBytes = write(fifoFile, arr, NUM) != NUM) {
-		printf("Cannot write to pipe file: %s\n", strerror(errno));
+	// write to file the whole BUFFER_SIZE amount as long as NUM >= BUFFER_SIZE
+	while (NUM >= BUFFER_SIZE) {
+		if (write(fifoFile, buffer, BUFFER_SIZE) < 0) {
+			printf("Cannot write to file: %s\n", strerror(errno));
+			return ERROR;
+		}
+		writtenBytes+=BUFFER_SIZE;
+		NUM -= BUFFER_SIZE;
+	}
+
+	// when NUM < BUFFER_SIZE, need to insert '\0'
+	buffer[NUM] = '\0';
+
+	// write the rest
+	if (write(fifoFile, buffer, NUM) < 0) {
+		printf("Cannot write to file: %s\n", strerror(errno));
 		return ERROR;
 	}
-	free(arr);
+	writtenBytes+=NUM;
 
 	// Finish time measuring
 	if(gettimeofday(&t2, NULL) < 0) {
@@ -83,6 +92,8 @@ int main(int argc, char** argv)
 	// print result together with number of bytes written
 	printf("%d were written in %f microseconds through fifo\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
 
+	// close file
+	close (fifoFile);
 
 	// unlink file
 	if(unlink(FIFOPATH) != 0) {
@@ -90,6 +101,6 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
-		// exit
-	exit(EXIT_SUCCESS);
+	// exit
+	return 0;
 }

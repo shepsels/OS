@@ -11,21 +11,21 @@
 # include <stdlib.h>
 # include <sys/mman.h>
 
-
 # define MAX_LEN 1024
 # define ERROR -1
 # define MMAP_FILE "tmp/mmapped.bin"
 # define PERM 0600
 
-void sigusr1_handler (int signum)	//todo maybe can change to return int for -1 for failure
+
+void sigusr1_handler (int signum);
+
+void sigusr1_handler (int signum)
 {
 	struct timeval t1, t2;
 	struct stat st;
 	int mmappedFile, cnt=0, i=0, fileSize;
 	double elapsed_microsec;
 	char* mapArray;
-
-	printf("handler received signal\n"); //todo delete
 
 	// open file
 	if((mmappedFile = open(MMAP_FILE, O_RDWR, PERM)) < 0) {
@@ -56,6 +56,7 @@ void sigusr1_handler (int signum)	//todo maybe can change to return int for -1 f
 
 	if (MAP_FAILED == mapArray) {
 		printf("Error mmapping the file: %s\n", strerror(errno));
+		close(mmappedFile);
 		exit(errno);
 	}
 
@@ -68,17 +69,26 @@ void sigusr1_handler (int signum)	//todo maybe can change to return int for -1 f
 	// Finish time measuring
 	if(gettimeofday(&t2, NULL) < 0) {
 		printf("Cannot stop time measuring: %s\n", strerror(errno));
+		close(mmappedFile);	
 		exit(errno);
 	}
-
-	//todo munmap??
 	
 	// Counting time elapsed
 	elapsed_microsec = (t2.tv_sec - t1.tv_sec) * 1000.0;
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
 	// print result together with number of bytes written
-	printf("%d were read in %f microseconds through mmap\n", cnt+1, elapsed_microsec); //todo edit to fit demands
+	printf("%d were read in %f microseconds through mmap\n", cnt+1, elapsed_microsec);
+
+	// close file
+	close(mmappedFile);
+
+	// unmap
+	if (munmap(mapArray, fileSize) < 0) {
+		printf("Cannot unmap file: %s\n", strerror(errno));
+		close(mmappedFile);	
+		exit(errno);
+	}
 
 	// unlink file
 	if(unlink(MMAP_FILE) != 0) {
@@ -86,48 +96,34 @@ void sigusr1_handler (int signum)	//todo maybe can change to return int for -1 f
 		exit(errno);
 	}
 
-	// exit
-	//todo unmap
-	close(mmappedFile);
-	printf("exiting\n");
 	exit(0);
-	printf("exited\n");
-}
-
-
-void sigint_handler(int signum) {//todo check if it counts as ignore
-	return;
 }
 
 
 int main(int argc, char** argv)
 {
-	// Structure to pass to the registration syscall //credit moodle example
+	// Structure to pass to the registration syscall
 	struct sigaction sigusr1, oldSignal, sigign;
-	// struct sigaction sigint;
-	// Assign pointer to our handler function
+
+	// set signal handlers
 	sigusr1.sa_handler = sigusr1_handler;
 	sigign.sa_handler = SIG_IGN;
-	// sigint.sa_handler = sigint_handler;
+
 	// Remove any special flag
 	sigusr1.sa_flags = 0;
-	// sigint.sa_flags = 0;
-	// Register the handler
+	sigign.sa_flags = 0;
+
+	// Register siguser1 handler
 	if (0 != sigaction (SIGUSR1, &sigusr1, NULL))
 	{
 		printf("Signal handle registration failed. %s\n",strerror(errno));
 		return ERROR;
 	}
-	// ignore sigterm
+	// register handler to ignore sigterm
 	if (0 != sigaction (SIGTERM, &sigign, &oldSignal)) {
 		printf("Signal ignoring failed. %s\n",strerror(errno));
 		return ERROR;
 	}
-	// if (0 != sigaction (SIGUSR1, &sigint, NULL))
-	// {
-	// 	printf("Signal handle registration failed. %s\n",strerror(errno));
-	// 	return ERROR;
-	// }
 
 	// infinite loop
 	while(1)
@@ -141,6 +137,5 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
-	
 	return 0;
 }

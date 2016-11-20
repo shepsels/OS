@@ -113,5 +113,4 @@ int main(int argc, char** argv)
 	// //close files and free memory todo
 	close(mmappedFile);
 	return 0;
-
 }
