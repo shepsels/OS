@@ -1,15 +1,15 @@
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <dirent.h>
-# include <stdio.h>
-# include <fcntl.h>
-# include <unistd.h>
-# include <string.h>
-# include <errno.h> 
-# include <sys/time.h>
-# include <signal.h>
-# include <stdlib.h>
-# include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <assert.h>
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 
 # define MAX_LEN 1024
@@ -20,7 +20,7 @@
 
 int main(int argc, char** argv)
 {
-	int fifoFile, bytesRead, fileSize, totalRead=0, i;
+	int fifoFile, bytesRead, fileSize, i, totalRead=0;
 	double elapsed_microsec;
 	char buffer[BUFFERSIZE];
 	struct stat st;
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
 	}
 
 	// read bytes 
-	while(bytesRead = read(fifoFile, buffer, BUFFERSIZE) > 0) {
+	while((bytesRead = read(fifoFile, buffer, BUFFERSIZE)) > 0) {
 		// count total number of 'a' characters
 		printf("reading %d bytes to buffer.\n", bytesRead);
 		for(i=0; i<bytesRead; i++) {
