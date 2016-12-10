@@ -66,6 +66,13 @@ void sigusr1_handler (int signum)
 		i++;
 	}
 
+	// validate what stopped while loop
+	if (mapArray[i] != '\0') {
+		printf("Error with file. not containing only a and EOF: %s\n", strerror(errno));
+		close(mmappedFile);
+		exit(errno);
+	}
+
 	// Finish time measuring
 	if(gettimeofday(&t2, NULL) < 0) {
 		printf("Cannot stop time measuring: %s\n", strerror(errno));
