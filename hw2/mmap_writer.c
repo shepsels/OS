@@ -57,7 +57,6 @@ int main(int argc, char** argv)
 	sprintf(mmapedFullname, "%s/%s", TEMPDIR, MMAP_FILE);
 
 	// create mmapped file
-	//todo needs to check what to do if dir doesnt exist. maybe needs to mkdir first
 	if((mmappedFile = open(mmapedFullname, O_RDWR | O_CREAT, PERM)) < 0) {
 		printf("cannot create mmap file.%s\n", strerror(errno));
 		return ERROR;

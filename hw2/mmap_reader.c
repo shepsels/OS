@@ -41,7 +41,7 @@ void sigusr1_handler (int signum)
 	fileSize = st.st_size;
 
 	// start time measurement
-	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
+	if(gettimeofday(&t1, NULL) < 0) {
 		printf("Cannot start measuring time: %s\n", strerror(errno));
 		exit(errno);
 	}
