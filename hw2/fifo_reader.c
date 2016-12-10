@@ -53,7 +53,6 @@ int main(int argc, char** argv)
 	// read bytes 
 	while((bytesRead = read(fifoFile, buffer, BUFFERSIZE)) > 0) {
 		// count total number of 'a' characters
-		printf("reading %d bytes to buffer.\n", bytesRead);
 		for(i=0; i<bytesRead; i++) {
 			if(buffer[i] == 'a') {
 				totalRead++;

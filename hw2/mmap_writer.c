@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 	
 	// print result together with number of bytes written
-	printf("%d were written in %f microseconds through mmap\n", (i+1), elapsed_microsec); //todo edit to fit demands
+	printf("%d were written in %f microseconds through mmap\n", (i+1), elapsed_microsec);
 
 	// unmap
 	if (munmap(mapArray, NUM) < 0) {

@@ -18,14 +18,69 @@
 # define BUFFER_SIZE 4096
 
 
+void sigpipe_handler(int signal);
+
+// global variables
+	double elapsed_microsec;
+
+	// time measurement
+	struct timeval t1, t2;
+
+
+
+
+void sigpipe_handler(int signal) {
+	struct sigaction old;
+
+	// start time measurement
+	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
+		printf("Cannot start measuring time: %s\n", strerror(errno));
+		return ERROR;
+	}
+
+	// Counting time elapsed
+	elapsed_microsec = (t2.tv_sec - t1.tv_sec) * 1000.0;
+	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
+
+	// print result together with number of bytes written
+	printf("%d were written in %f microseconds through fifo\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
+
+	// close file
+	close (fifoFile);
+
+	// unlink file
+	if(unlink(FIFOPATH) != 0) {
+		printf("Cannot delete the file: %s\n", strerror(errno));
+		return ERROR;
+	}
+
+	exit(0);
+
+}
+
 int main(int argc, char** argv)
 {
 	int NUM, fifoFile, writtenBytes, i, written;
-	double elapsed_microsec;
-	// time measurement
-	struct timeval t1, t2;
 	char buffer[BUFFER_SIZE];
 
+	// sigint structs
+	struct sigaction oldSignal, sigign;
+	sigign.sa_handler = SIG_IGN;
+	sigign.sa_flags = 0;
+
+	// sigpipe struct
+	struct sigaction sigpipe;
+	sigpipe.sa_handler = sigpipe_handler;
+	sigpipe.sa_flags = 0;
+
+
+	// set signal handlers
+
+	// register handler to ignore sigint
+	if (0 != sigaction (SIGINT, &sigign, &oldSignal)) {
+		printf("Signal ignoring failed. %s\n",strerror(errno));
+		return ERROR;
+	}
 
 	// validate number of arguments
 	if(argc != 2) {
@@ -67,7 +122,6 @@ int main(int argc, char** argv)
 			printf("Cannot write to file: %s\n", strerror(errno));
 			return ERROR;
 		}
-		printf("*********written: %d\n", written);
 		writtenBytes+=BUFFER_SIZE;
 		NUM -= BUFFER_SIZE;
 	}
@@ -80,7 +134,6 @@ int main(int argc, char** argv)
 		printf("Cannot write to file: %s\n", strerror(errno));
 		return ERROR;
 	}
-	printf("*********written: %d\n", written);
 	writtenBytes+=NUM;
 
 	// Finish time measuring
@@ -94,7 +147,7 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
 	// print result together with number of bytes written
-	printf("%d were written in %f microseconds through fifo\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
+	printf("%d were written in %f microseconds through FIFO\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
 
 	// close file
 	close (fifoFile);
