@@ -12,7 +12,6 @@
 # include <signal.h>
 
 # define MAX_LEN 1024
-# define FILESIZE 40960000	//todo check what should be here
 # define ERROR -1
 # define TEMPDIR "tmp"
 # define MMAP_FILE "mmapped.bin"
@@ -54,7 +53,7 @@ int main(int argc, char** argv)
 	NUM  = atoi(argv[1]);
 	RPID = atoi(argv[2]);
 
-	// create path to mmapped file //todo maybe can pass this and create it in def section
+	// create path to mmapped file
 	sprintf(mmapedFullname, "%s/%s", TEMPDIR, MMAP_FILE);
 
 	// create mmapped file
@@ -90,7 +89,7 @@ int main(int argc, char** argv)
 	}
 
 	// start time measurement
-	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
+	if(gettimeofday(&t1, NULL) < 0) {
 		printf("Cannot start measuring time: %s\n", strerror(errno));
 		return ERROR;
 	}

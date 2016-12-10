@@ -70,6 +70,9 @@ void sigusr1_handler (int signum)
 	if (mapArray[i] != '\0') {
 		printf("Error with file. not containing only a and EOF: %s\n", strerror(errno));
 		close(mmappedFile);
+		// print result together with number of bytes written
+		printf("%d were read in %f microseconds through mmap\n", i, elapsed_microsec);
+
 		exit(errno);
 	}
 
