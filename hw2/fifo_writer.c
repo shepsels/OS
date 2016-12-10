@@ -21,11 +21,9 @@
 void sigpipe_handler(int signal);
 
 // global variables
-	double elapsed_microsec;
-
-	// time measurement
-	struct timeval t1, t2;
-
+double elapsed_microsec;
+int writtenBytes, fifoFile;
+struct timeval t1, t2;
 
 
 
@@ -33,9 +31,9 @@ void sigpipe_handler(int signal) {
 	struct sigaction old;
 
 	// start time measurement
-	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
+	if(gettimeofday(&t1, NULL) < 0) {
 		printf("Cannot start measuring time: %s\n", strerror(errno));
-		return ERROR;
+		exit(errno);
 	}
 
 	// Counting time elapsed
@@ -43,7 +41,7 @@ void sigpipe_handler(int signal) {
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
 	// print result together with number of bytes written
-	printf("%d were written in %f microseconds through fifo\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
+	printf("%d were written in %f microseconds through fifo\n", writtenBytes, elapsed_microsec);
 
 	// close file
 	close (fifoFile);
@@ -51,7 +49,7 @@ void sigpipe_handler(int signal) {
 	// unlink file
 	if(unlink(FIFOPATH) != 0) {
 		printf("Cannot delete the file: %s\n", strerror(errno));
-		return ERROR;
+		exit(errno);
 	}
 
 	exit(0);
@@ -73,12 +71,15 @@ int main(int argc, char** argv)
 	sigpipe.sa_handler = sigpipe_handler;
 	sigpipe.sa_flags = 0;
 
-
-	// set signal handlers
-
 	// register handler to ignore sigint
 	if (0 != sigaction (SIGINT, &sigign, &oldSignal)) {
-		printf("Signal ignoring failed. %s\n",strerror(errno));
+		printf("Error, Signal ignoring failed. %s\n",strerror(errno));
+		return ERROR;
+	}
+
+	// register sigpipe
+	if (0 != sigaction (SIGPIPE, &sigpipe, NULL)) {
+		printf("Error, Cannot register signal handler for SIGPIPE. %s\n",strerror(errno));
 		return ERROR;
 	}
 
@@ -97,7 +98,6 @@ int main(int argc, char** argv)
 		return ERROR;
 	}
 
-
 	// open file for writing
 	if((fifoFile = open(FIFOPATH, O_WRONLY)) < 0) {
 		printf("Cannot open fifo file.%s\n", strerror(errno));
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
 
 
 	// start time measurement
-	if(gettimeofday(&t1, NULL) < 0) { //todo validate it returns negative int on failure
+	if(gettimeofday(&t1, NULL) < 0) {
 		printf("Cannot start measuring time: %s\n", strerror(errno));
 		return ERROR;
 	}
@@ -147,7 +147,13 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 
 	// print result together with number of bytes written
-	printf("%d were written in %f microseconds through FIFO\n", writtenBytes, elapsed_microsec); //todo edit to fit demands, and make sure writtenBytes holds the required info
+	printf("%d were written in %f microseconds through FIFO\n", writtenBytes, elapsed_microsec);
+
+	// set back sigint
+	if (0 != sigaction (SIGINT, &oldSignal, NULL)) {
+		printf("Signal restoring failed. %s\n",strerror(errno));
+		return ERROR;
+	}
 
 	// close file
 	close (fifoFile);
