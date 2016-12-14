@@ -1,13 +1,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <dirent.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
 # include <signal.h>
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 	// register handler to ignore sigint
 	if (0 != sigaction (SIGINT, &sigign, &oldSignal)) {
 		printf("Error, Signal ignoring failed. %s\n",strerror(errno));
-		return ERROR;
+		exit(errno);
 	}
 
 	// sleep before opening file
@@ -44,13 +44,14 @@ int main(int argc, char** argv)
 	// open fifo file for reading
 	if((fifoFile = open(FIFOPATH, O_RDONLY)) < 0) {
 		printf("cannot open fifo file.%s\n", strerror(errno));
-		return ERROR;
+		exit(errno);
 	}
 
 	// start time measurement
 	if(gettimeofday(&t1, NULL) < 0) {
 		printf("Cannot start measuring time: %s\n", strerror(errno));
-		return ERROR;
+		close(fifoFile);
+		exit(errno);
 	}
 
 	// read bytes 
@@ -65,13 +66,15 @@ int main(int argc, char** argv)
 
 	if (bytesRead < 0) {
 		printf("Cannot read from file: %s\n", strerror(errno));
-		return ERROR;
+		close(fifoFile);
+		exit(errno);
 	}
 
 	// Finish time measuring
 	if(gettimeofday(&t2, NULL) < 0) {
 		printf("Cannot stop time measuring: %s\n", strerror(errno));
-		return ERROR;
+		close(fifoFile);
+		exit(errno);
 	}
 	
 	// Counting time elapsed
@@ -79,7 +82,7 @@ int main(int argc, char** argv)
 	elapsed_microsec += (t2.tv_usec - t1.tv_usec) / 1000.0;
 	
 	// print result together with number of bytes written
-	printf("%d were read in %f microseconds through FIFO\n", totalRead, elapsed_microsec);
+	printf("%d were read in %f miliseconds through FIFO\n", totalRead, elapsed_microsec);
 
 	// set back sigint
 	if (0 != sigaction (SIGINT, &oldSignal, NULL)) {
