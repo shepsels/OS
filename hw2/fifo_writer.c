@@ -15,7 +15,8 @@
 # define MAX_LEN 1024
 # define ERROR -1
 # define PERM 0600
-# define FIFOPATH "tmp/osfifo"
+# define FIFOPATH "/tmp/osfifo"
+# define tmp "/tmp/tmp"
 # define BUFFER_SIZE 4096
 
 
@@ -25,6 +26,7 @@ void sigpipe_handler(int signal);
 double elapsed_microsec;
 int writtenBytes, fifoFile;
 struct timeval t1, t2;
+struct stat fifoExists;
 
 
 void sigpipe_handler(int signal) {
@@ -58,7 +60,7 @@ void sigpipe_handler(int signal) {
 
 int main(int argc, char** argv)
 {
-	int NUM, fifoFile, writtenBytes, i, written;
+	int NUM, fifoFile, writtenBytes, i, written, writeSize=BUFFER_SIZE;
 	long lNUM;
 	char buffer[BUFFER_SIZE], strtolBuffer[BUFFER_SIZE];
 
@@ -99,9 +101,28 @@ int main(int argc, char** argv)
 	NUM = (int) lNUM;
 
 
-	// open file. check if fifo exists
-	fifoFile = open(FIFOPATH, O_WRONLY | O_APPEND);
-	if (errno == ENOENT) {
+	// open file. check if fifo exists. CREDIT: stackoverflow/230062/whats-the-best-way-to-check-if-a-file-exists-in-c-cross-platform
+	if (stat(FIFOPATH, &fifoExists) == 0) {
+		// fifo exists. open file
+		if (fifoFile = open(FIFOPATH, O_WRONLY) > 0) {
+			//file opened. give it correct permissions as should in mkfifo
+			if (chmod(FIFOPATH, PERM) < 0) {
+				printf("Cannot change permissions.%s\n", strerror(errno));
+				close(fifoFile);
+				unlink(FIFOPATH);
+				exit(errno);
+			}
+		}
+		// couldn't open file
+		else {
+			printf("Cannot open fifo file.%s\n", strerror(errno));
+			unlink(FIFOPATH);
+			exit(errno);
+		}
+	}
+
+	// file not exists. mkfifo first
+	else {
 		// create pipe
 		if(mkfifo(FIFOPATH, PERM) < 0) {
 			printf("Cannot create fifo file.%s\n", strerror(errno));
@@ -114,29 +135,7 @@ int main(int argc, char** argv)
 			unlink(FIFOPATH);
 			exit(errno);
 		}
-
 	}
-
-	else {
-		if (fifoFile > 0) {
-			//fifo file exists. give it correct permissions as should in mkfifo
-			if (chmod(FIFOPATH, PERM) < 0) {
-				printf("Cannot change permissions.%s\n", strerror(errno));
-				close(fifoFile);
-				unlink(FIFOPATH);
-				exit(errno);
-			}
-		}
-
-		// error with openfile
-		else {
-			printf("Cannot open fifo file.%s\n", strerror(errno));
-			unlink(FIFOPATH);
-			exit(errno);
-		}
-
-	}
-
 
 	// start time measurement
 	if(gettimeofday(&t1, NULL) < 0) {
@@ -153,7 +152,14 @@ int main(int argc, char** argv)
 
 	// write to file the whole BUFFER_SIZE amount as long as NUM >= BUFFER_SIZE
 	while (writtenBytes < NUM) {
-		if ((written = write(fifoFile, buffer + written, NUM - writtenBytes)) < 0) {
+
+		// when there's less then BUFFER_SIZE to write, 
+		// need to adjust the size we write, since buffer full of 'a'
+		if (NUM - writtenBytes < writeSize) {
+			writeSize = NUM - writtenBytes;
+		}
+
+		if ((written = write(fifoFile, buffer, writeSize)) < 0) {
 			printf("Cannot write to file: %s\n", strerror(errno));
 			close(fifoFile);
 			unlink(FIFOPATH);
@@ -161,28 +167,6 @@ int main(int argc, char** argv)
 		}
 		writtenBytes += written;
 	}
-
-	// // write to file the whole BUFFER_SIZE amount as long as NUM >= BUFFER_SIZE
-	// while (NUM >= BUFFER_SIZE) {
-	// 	if ((written = write(fifoFile, buffer, BUFFER_SIZE)) < 0) {
-	// 		printf("Cannot write to file: %s\n", strerror(errno));
-	// 		close(fifoFile);
-	// 		unlink(FIFOPATH);
-	// 		exit(errno);
-	// 	}
-	// 	writtenBytes += written;
-	// 	NUM -= written;
-	// }
-
-	// // when NUM < BUFFER_SIZE, need to insert '\0'
-	// buffer[NUM] = '\0';
-
-	// // write the rest
-	// if ((written = write(fifoFile, buffer, NUM)) < 0) {
-	// 	printf("Cannot write to file: %s\n", strerror(errno));
-	// 	return ERROR;
-	// }
-	// writtenBytes+=NUM;
 
 	// Finish time measuring
 	if(gettimeofday(&t2, NULL) < 0) {

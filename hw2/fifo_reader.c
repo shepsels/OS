@@ -14,7 +14,7 @@
 
 # define MAX_LEN 1024
 # define ERROR -1
-# define FIFOPATH "tmp/osfifo"
+# define FIFOPATH "/tmp/osfifo"
 # define PERM 0600
 # define BUFFERSIZE 4096
 
@@ -54,20 +54,23 @@ int main(int argc, char** argv)
 		exit(errno);
 	}
 
-	// read bytes 
-	while((bytesRead = read(fifoFile, buffer, BUFFERSIZE)) > 0) {
-		// count total number of 'a' characters
+	while(1) {
+		if((bytesRead = read(fifoFile, buffer, BUFFERSIZE)) < 0) {
+			printf("Cannot read from file: %s\n", strerror(errno));
+			close(fifoFile);
+			exit(errno);
+		} 
+
+		// done reading
+		else if (bytesRead == 0) {
+			break;
+		}
+
 		for(i=0; i<bytesRead; i++) {
 			if(buffer[i] == 'a') {
 				totalRead++;
 			}
 		}
-	}
-
-	if (bytesRead < 0) {
-		printf("Cannot read from file: %s\n", strerror(errno));
-		close(fifoFile);
-		exit(errno);
 	}
 
 	// Finish time measuring
@@ -87,7 +90,7 @@ int main(int argc, char** argv)
 	// set back sigint
 	if (0 != sigaction (SIGINT, &oldSignal, NULL)) {
 		printf("Signal restoring failed. %s\n",strerror(errno));
-		return ERROR;
+		exit(errno);
 	}
 
 	// close file

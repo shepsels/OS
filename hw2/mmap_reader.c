@@ -13,7 +13,7 @@
 
 # define MAX_LEN 1024
 # define ERROR -1
-# define MMAP_FILE "tmp/mmapped.bin"
+# define MMAP_FILE "/tmp/mmapped.bin"
 # define PERM 0600
 
 
@@ -70,9 +70,9 @@ void sigusr1_handler (int signum)
 	if (mapArray[i] != '\0') {
 		printf("Error with file. not containing only a and EOF: %s\n", strerror(errno));
 		close(mmappedFile);
+		
 		// print result together with number of bytes written
-		printf("%d were read in %f microseconds through mmap\n", i, elapsed_microsec);
-
+		printf("%d were read in %f miliseconds through mmap\n", i, elapsed_microsec);
 		exit(errno);
 	}
 
@@ -127,12 +127,12 @@ int main(int argc, char** argv)
 	if (0 != sigaction (SIGUSR1, &sigusr1, NULL))
 	{
 		printf("Signal handle registration failed. %s\n",strerror(errno));
-		return ERROR;
+		return errno;
 	}
 	// register handler to ignore sigterm
 	if (0 != sigaction (SIGTERM, &sigign, &oldSignal)) {
 		printf("Signal ignoring failed. %s\n",strerror(errno));
-		return ERROR;
+		return errno;
 	}
 
 	// infinite loop
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 	// set back sigterm
 	if (0 != sigaction (SIGTERM, &oldSignal, NULL)) {
 		printf("Signal restoring failed. %s\n",strerror(errno));
-		return ERROR;
+		return errno;
 	}
 
 	return 0;
